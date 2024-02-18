@@ -42,4 +42,4 @@ This tool handles:
 Feel free to request pull requests and leave your issues or improvements. I will happily help.
 
 ## License
-[MIT License](LICENSE) - Free as a bird! Use, modify, and distribute as your heart desires.
+[GNU General Public License](LICENSE) - Feel free to review the license terms in the linked file. Thank you for your interest in my project!
