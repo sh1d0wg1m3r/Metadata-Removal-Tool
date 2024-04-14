@@ -98,6 +98,7 @@ def remove_metadata_from_docx(docx_path):
 
         doc.core_properties.author = ""
         doc.core_properties.title = ""
+        doc.core_properties.last_modified_by = ""  # Remove "Last Modified By" metadata from issue #1
         doc.save(docx_path)
         return True
     except Exception as e:
