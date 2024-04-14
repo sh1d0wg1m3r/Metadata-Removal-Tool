@@ -10,46 +10,29 @@ from mutagen.flac import FLAC
 from openpyxl import load_workbook
 import zipfile
 
-def remove_metadata(file_path):
-    # Determine the file type (extension) ༼ つ ◕_◕ ༽つ
-    file_extension = os.path.splitext(file_path)[1].lower()
-
-    # Call the appropriate function based on the file extension (～￣▽￣)～
-    if file_extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff']:
-        remove_metadata_from_image(file_path)
-    elif file_extension == '.pdf':
-        remove_metadata_from_pdf(file_path)
-    elif file_extension == '.docx':
-        remove_metadata_from_docx(file_path)
-    elif file_extension == '.mp3':
-        remove_metadata_from_mp3(file_path)
-    elif file_extension == '.flac':
-        remove_metadata_from_flac(file_path)
-    elif file_extension == '.xlsx':
-        remove_metadata_from_xlsx(file_path)
-    elif file_extension == '.zip':
-        remove_metadata_from_zip(file_path)  # Handle ZIP files ಠ╭╮ಠ
-    else:
-        print(f"File type {file_extension} not supported.")
-
-
 def remove_metadata_from_zip(zip_path):
     try:
-        # Create a temporary directory to extract the ZIP ಠಿ_ಠ
+        # Create a temporary directory to extract the ZIP (づ｡◕‿‿◕｡)づ
         temp_dir = "temp_zip_extract"
         os.makedirs(temp_dir, exist_ok=True)
         
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(temp_dir)
         
+        # Remove metadata from all files within the ZIP (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧
+        for root, dirs, files in os.walk(temp_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                remove_metadata(file_path)
         
+        # Repackage the ZIP with clean files (～￣▽￣)～
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_ref:
             for root, dirs, files in os.walk(temp_dir):
                 for file in files:
-                    filePath = os.path.join(root, file)
-                    zip_ref.write(filePath, os.path.relpath(filePath, temp_dir))
+                    file_path = os.path.join(root, file)
+                    zip_ref.write(file_path, os.path.relpath(file_path, temp_dir))
         
-        # Clean up the temporary directory
+        # Clean up the temporary directory (ノ^_^)ノ
         for root, dirs, files in os.walk(temp_dir, topdown=False):
             for name in files:
                 os.remove(os.path.join(root, name))
@@ -61,12 +44,12 @@ def remove_metadata_from_zip(zip_path):
     except Exception as e:
         print(f"Error processing ZIP {zip_path}: {e}")
         return False
-        
 
 def remove_metadata_from_image(image_path):
     try:
         with Image.open(image_path) as img:
-            data = img.getdata()
+            # Convert image data to a list (✿◠‿◠)
+            data = list(img.getdata())
             clean_img = Image.new(img.mode, img.size)
             clean_img.putdata(data)
             clean_img.save(image_path)
@@ -80,6 +63,7 @@ def remove_metadata_from_pdf(pdf_path):
         reader = PdfReader(pdf_path)
         writer = PdfWriter()
 
+        # Add pages to the writer, leaving out metadata (▀̿Ĺ̯▀̿ ̿)
         for page in reader.pages:
             writer.add_page(page)
 
@@ -93,12 +77,19 @@ def remove_metadata_from_pdf(pdf_path):
 def remove_metadata_from_docx(docx_path):
     try:
         doc = Document(docx_path)
-        for section in doc.sections:
-            section.start_type = None
-
-        doc.core_properties.author = ""
-        doc.core_properties.title = ""
-        doc.core_properties.last_modified_by = ""  # Remove "Last Modified By" metadata from issue #1
+        # Clear the metadata fields (ﾉ≧∀≦)ﾉ
+        metadata_properties = [
+            'author', 'comments', 'category', 'content_status',
+            'identifier', 'keywords', 'language', 'last_modified_by',
+            'last_printed', 'revision', 'subject', 'title', 'version'
+        ]
+        for prop in metadata_properties:
+            try:
+                setattr(doc.core_properties, prop, "")
+            except ValueError:
+                # Skip updating the property if it requires a specific data type
+                pass
+        doc.settings.odd_and_even_pages_header_footer = False
         doc.save(docx_path)
         return True
     except Exception as e:
@@ -108,12 +99,11 @@ def remove_metadata_from_docx(docx_path):
 def remove_metadata_from_mp3(mp3_path):
     try:
         audio = MP3(mp3_path, ID3=ID3)
-        audio.delete()  # Remove all tags ( ﾉ ﾟｰﾟ)ﾉ
+        audio.delete()  # Remove all tags (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧
         audio.save(mp3_path)
         return True
     except ID3NoHeaderError:
         audio = MP3(mp3_path)
-        audio.add_tags()
         audio.save(mp3_path)
         return True
     except Exception as e:
@@ -123,7 +113,7 @@ def remove_metadata_from_mp3(mp3_path):
 def remove_metadata_from_flac(flac_path):
     try:
         audio = FLAC(flac_path)
-        audio.delete()  # Remove all tags ^_____^
+        audio.delete()  # Remove all tags (◠﹏◠)
         audio.save()
         return True
     except Exception as e:
@@ -133,51 +123,74 @@ def remove_metadata_from_flac(flac_path):
 def remove_metadata_from_xlsx(xlsx_path):
     try:
         workbook = load_workbook(filename=xlsx_path)
-        workbook.properties.creator = ""
-        workbook.properties.title = ""
+        metadata_properties = [
+            'creator', 'title', 'subject', 'description',
+            'keywords', 'category', 'comments', 'last_modified_by',
+            'company', 'manager'
+        ]
+        for prop in metadata_properties:
+            try:
+                setattr(workbook.properties, prop, "")
+            except ValueError:
+                pass
         workbook.save(xlsx_path)
         return True
     except Exception as e:
         print(f"Error processing XLSX {xlsx_path}: {e}")
         return False
 
-def remove_metadata(file_paths):
-    for file_path in file_paths:
-        file_extension = os.path.splitext(file_path)[1].lower()
-        if file_extension in ['.jpg', '.jpeg', '.png']:
-            success = remove_metadata_from_image(file_path)
-        elif file_extension == '.pdf':
-            success = remove_metadata_from_pdf(file_path)
-        elif file_extension == '.docx':
-            success = remove_metadata_from_docx(file_path)
-        elif file_extension == '.mp3':
-            success = remove_metadata_from_mp3(file_path)
-        elif file_extension == '.xlsx':
-            success = remove_metadata_from_xlsx(file_path)
-        elif file_extension == '.zip':
-            success = remove_metadata_from_zip(file_path)  
-        else:
-            messagebox.showerror("Unsupported File", f"File type {file_extension} is not supported.")
-            continue
+def remove_metadata(file_path):
+    # Determine the file type based on the extension (ﾉ≧∀≦)ﾉ
+    file_extension = os.path.splitext(file_path)[1].lower()
+    if file_extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff']:
+        return remove_metadata_from_image(file_path)
+    elif file_extension == '.pdf':
+        return remove_metadata_from_pdf(file_path)
+    elif file_extension == '.docx':
+        return remove_metadata_from_docx(file_path)
+    elif file_extension == '.mp3':
+        return remove_metadata_from_mp3(file_path)
+    elif file_extension == '.flac':
+        return remove_metadata_from_flac(file_path)
+    elif file_extension == '.xlsx':
+        return remove_metadata_from_xlsx(file_path)
+    elif file_extension == '.zip':
+        return remove_metadata_from_zip(file_path)
+    else:
+        print(f"File type {file_extension} not supported.")
+        return False
 
-        if success:
-            messagebox.showinfo("Success", f"Metadata removed from {os.path.basename(file_path)}")
+def process_files(file_paths):
+    success_count = 0
+    for file_path in file_paths:
+        if remove_metadata(file_path):
+            success_count += 1
         else:
             messagebox.showerror("Error", f"Failed to remove metadata from {os.path.basename(file_path)}")
+    
+    if success_count == len(file_paths):
+        messagebox.showinfo("Success", "Metadata removed from all selected files. (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧")
+    else:
+        messagebox.showinfo("Partial Success", f"Metadata removed from {success_count} out of {len(file_paths)} files. (╯°□°）╯︵ ┻━┻")
 
 def select_files():
+    # Open the file dialog to select files (◕‿◕✿)
     file_paths = filedialog.askopenfilenames()
     if file_paths:
-        remove_metadata(file_paths)
+        process_files(file_paths)
 
 def create_ui():
+    # Create the main window (✿◠‿◠)
     window = tk.Tk()
     window.title("Metadata Removal Tool")
 
+    # Create the "Select Files" button (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧
     btn_select_files = tk.Button(window, text="Select Files", command=select_files)
     btn_select_files.pack(pady=20)
 
+    # Start the main event loop (◡‿◡✿)
     window.mainloop()
 
 if __name__ == "__main__":
+    # Run the program (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧
     create_ui()
